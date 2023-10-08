@@ -13,7 +13,8 @@ dev = qml.device('default.qubit', wires=n_qubits)
 def circuit(inputs, weights):
     for qub in range(n_qubits):
         qml.Hadamard(wires=qub)
-        qml.RY(inputs[qub], wires=qub)
+        # if bachsize > 1 use inputs[:,qub] else inputs[qub]
+        qml.RY(inputs[:,qub], wires=qub)
         # qml.RY(inputs[qub], wires=qub)
 
     for layer in range(n_layers):
@@ -41,10 +42,33 @@ class Quanv2d(nn.Module):
         x_lst = []
         for i in range(0, x.shape[2]-1,2):
             for j in range(0, x.shape[3]-1,2):
+                ise2 = torch.flatten(x[:, :, i:i + self.kernel_size, j:j + self.kernel_size], start_dim=1)
+                ise = ise2.shape
+                batch_dims = ise2.shape[:-1]
+                inputs = torch.reshape(ise2, (-1, ise2.shape[-1]))
+                # self.ql1(ise2)
                 x_lst.append(self.ql1(torch.flatten(x[:, :, i:i + self.kernel_size, j:j + self.kernel_size], start_dim=1)))
         x = torch.cat(x_lst,dim=1)  # .view(bs,n_qubits,14,14)
         return x
+class PreConvNet(nn.Module):
+    def __init__(self):
+        super(PreConvNet, self).__init__()
+        self.pre_conv = nn.Conv2d(1,1,(2,2),2)
+        self.qc = Quanv2d(kernel_size=2)
+        # self.conv = nn.Conv2d(4,32,4)
+        self.fc1 = nn.Linear(4*7*7,20)
+        self.fc2 = nn.Linear(20,10)
+        # self.pooling = nn.MaxPool2d(2)
 
+    def forward(self,x):
+        x = self.pre_conv(x)
+        x = self.qc(x)
+        # x = F.relu(x)
+        # x = x.view(bs,-1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        return x
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
