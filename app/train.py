@@ -46,8 +46,6 @@ def train_qcnn(net = None,
         #     if i > 10 :break
         #     logging.info('Epoch:{}, TR_Loss: {:.4f}, TR_Acc: {:.4f}'.format(i,i,i))
         for i, (sampled_batch,target_batch) in enumerate(train_tqdm):
-            if i > 10:
-                break
             t2 = time.time()
             data = sampled_batch
             y = target_batch
@@ -64,8 +62,8 @@ def train_qcnn(net = None,
             y_trues += y.cpu().numpy().tolist()
             y_preds += output.data.cpu().numpy().argmax(axis=1).tolist()
         
-        PATH= os.path.join(FLAGS.Log,"qcnn_epoch{}.pth".format(epoch))
-        torch.save(net.state_dict(), PATH)
+        save_path= os.path.join(FLAGS.Log,"qcnn_epoch{}.pth".format(epoch))
+        torch.save(net.state_dict(), save_path)
 
         tr_acc = accuracy_score(y_trues, y_preds)
         tr_accs.append(tr_acc)
@@ -107,6 +105,10 @@ def train_qcnn(net = None,
         logging.info('Time for Epoch ({}): {:.4f}'.format(epoch, time.time()-t1))
         print('Epoch: {} VAL_Loss: {:.4f}, VAL_Acc: {:.4f}'.format(epoch, val_loss, val_acc))
         print('Time for Epoch ({}): {:.4f}'.format(epoch, time.time()-t1))
+    logging.info('training_losses:{:.4f}'.format(tr_losses))
+    logging.info('training_accs:{:.4f}'.format(tr_accs))
+    logging.info('eval_losses:{:.4f}'.format(val_losses))
+    logging.info('eval_accs:{:.4f}'.format(val_accs))
     
 def train_network(net = None, train_set = None, val_set = None, device = None, 
 epochs = 10, bs = 20, optimizer = None, criterion = None):  # outdir = None, file_prefix = None):
